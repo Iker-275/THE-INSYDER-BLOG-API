@@ -1,9 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {getAllArticles} = require("../controllers/blog_controller");
+const {getAllArticles,postArticle, updateArticle} = require("../controllers/blog_controller");
 
 
 router.route("/articles").get(getAllArticles);
+router.post("/create",postArticle);
+router.patch("/update/:id",updateArticle);
 
 
 

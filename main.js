@@ -8,8 +8,8 @@ require("dotenv").config();
 
 const PORT = process.env.PORT || 3000;
 const blog_routes = require("./routes/blog_routes");
-app.use(bodyParser.json());
-
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json())
 
 
 
