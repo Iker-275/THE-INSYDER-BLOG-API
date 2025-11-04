@@ -66,7 +66,7 @@ const getAllArticles = async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    // 8️⃣ Handle server errors
+
     return res.status(500).json({
       success: false,
       message: "Internal server error. Could not fetch articles.",
@@ -75,7 +75,99 @@ const getAllArticles = async (req, res) => {
   }
 };
 
+const searchArticles = async (req, res) => {
+  try {
+    
+    const {
+      title,
+      author,
+      content,
+      visible,
+      publishedAt,
+      sort = "desc", // default: newest first
+      page = 1,
+      limit = 10,
+    } = req.query;
 
+    
+    const currentPage = Math.max(1, parseInt(page));
+    const pageSize = Math.max(1, parseInt(limit));
+    const skip = (currentPage - 1) * pageSize;
+
+    
+    const filter = {};
+
+    if (title) {
+      filter.title = { $regex: title, $options: "i" }; // case-insensitive search
+    }
+
+    if (author) {
+      filter.author = { $regex: author, $options: "i" };
+    }
+
+    if (content) {
+      filter.content = { $regex: content, $options: "i" };
+    }
+
+    if (visible !== undefined) {
+      filter.visible = visible === "true";
+    }
+
+    if (publishedAt) {
+       if (typeof publishedAt === "string") {
+        filter.publishedAt = { $gte: new Date(publishedAt) };
+      } else if (typeof publishedAt === "object") {
+        const from = publishedAt.from ? new Date(publishedAt.from) : new Date("1970-01-01");
+        const to = publishedAt.to ? new Date(publishedAt.to) : new Date();
+        filter.publishedAt = { $gte: from, $lte: to };
+      }
+    }
+
+   
+    const totalResults = await Article.countDocuments(filter);
+
+    
+    const articles = await Article.find(filter)
+      .sort({ createdAt: sort === "asc" ? 1 : -1 })
+      .skip(skip)
+      .limit(pageSize);
+
+    
+    if (articles.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching articles found.",
+        data: [],
+      });
+    }
+
+   
+    return res.status(200).json({
+      success: true,
+      message: "Search results retrieved successfully.",
+     
+      //filtersUsed: filter,
+      data: articles,
+       pagination: {
+        currentPage,
+        pageSize,
+        totalResults,
+        totalPages: Math.ceil(totalResults / pageSize),
+        hasNextPage: currentPage * pageSize < totalResults,
+        hasPrevPage: currentPage > 1,
+      },
+    });
+  } catch (error) {
+    
+
+    
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while searching articles.",
+      error: error.message,
+    });
+  }
+};
 
 const postArticle = async (req, res) => {
     try {
@@ -239,4 +331,4 @@ const deleteArticle = async (req, res) => {
   }
 };
 
-module.exports = { getAllArticles, postArticle, updateArticle,deleteArticle };
+module.exports = { getAllArticles, postArticle, updateArticle,deleteArticle,searchArticles };
