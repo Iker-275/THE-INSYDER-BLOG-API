@@ -2,9 +2,78 @@ const Article = require("../models/article");
 const mongoose = require("mongoose");
 const { ObjectId } = require("mongodb");
 
+
+
+
 const getAllArticles = async (req, res) => {
-    res.status(200).json({ msg: "All Articles" });
-}
+  try {
+    
+    let { page = 1, limit = 5, visible, sort = "desc" } = req.query;
+
+    
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid pagination values. Page and limit must be positive integers.",
+      });
+    }
+
+    
+    const filter = {};
+    if (visible === "true") filter.visible = true;
+    if (visible === "false") filter.visible = false;
+
+    
+    const totalArticles = await Article.countDocuments(filter);
+
+    
+    const totalPages = Math.ceil(totalArticles / limit);
+    const skip = (page - 1) * limit;
+
+   
+    const articles = await Article.find(filter)
+      .sort({ createdAt: sort === "asc" ? 1 : -1 }) 
+      .skip(skip)
+      .limit(limit);
+
+    
+    if (!articles || articles.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No articles found.",
+        data: [],
+      });
+    }
+
+    
+    return res.status(200).json({
+      success: true,
+      message: "Articles retrieved successfully.",
+      data: articles,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        pageSize: limit,
+        totalArticles,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    // 8️⃣ Handle server errors
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Could not fetch articles.",
+      error: error.message,
+    });
+  }
+};
 
 
 
@@ -127,4 +196,47 @@ const updateArticle = async (req, res) => {
     }
 };
 
-module.exports = { getAllArticles, postArticle, updateArticle };
+
+
+const deleteArticle = async (req, res) => {
+  try {
+    const articleId = req.params.id?.trim();
+
+    
+    if (!mongoose.Types.ObjectId.isValid(articleId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Article ID format.",
+      });
+    }
+
+    
+    const result = await Article.deleteOne({ _id: new mongoose.Types.ObjectId(articleId) });
+
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Article not found or already deleted.",
+      });
+    }
+
+    
+    return res.status(200).json({
+      success: true,
+      message: "Article deleted successfully.",
+    });
+
+  } catch (error) {
+    console.error("Delete Error:", error);
+
+    
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error. Could not delete article.",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getAllArticles, postArticle, updateArticle,deleteArticle };
