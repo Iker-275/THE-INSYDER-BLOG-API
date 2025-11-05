@@ -4,18 +4,16 @@ const Author = require("../models/author");
 const createAuthor = async (req, res) => {
     try {
         const { name, bio, imageUrl, visible, genres } = req.body;
-        console.log(" we here 1");
-
         
         const existingAuthor = await Author.findOne({
             name:   { $regex: new RegExp(`^${name}$`, "i") },
         });
-        console.log("2");
+        
         if (existingAuthor) {
             return res.status(400).json({ success: false, message: "Author name already exists" });
         }
 
-        console.log("3");
+       
 
 
         const author = new Author({
@@ -37,12 +35,85 @@ const createAuthor = async (req, res) => {
         console.log("5");
 
     } catch (error) {
-        console.error("Error creating author:", error);
+      //  console.error("Error creating author:", error);
         return res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
 
 
+
+// const getAllAuthors = async (req, res) => {
+//   try {
+//     const {
+//       page = 1,
+//       limit = 10,
+//       visible,
+//       sortBy = "createdAt",
+//       order = "desc", 
+//     } = req.query;
+
+//     const query = {};
+//     if (visible !== undefined) query.visible = visible === "true";
+
+    
+//     const pageNum = Math.max(parseInt(page), 1);
+//     const limitNum = Math.max(parseInt(limit), 1);
+
+   
+//     const sortDirection = order === "asc" ? 1 : -1;
+//     const sortOptions = { [sortBy]: sortDirection };
+
+    
+//     const total = await Author.countDocuments(query);
+
+    
+//     const authors = await Author.find(query)
+//       .sort(sortOptions)
+//       .skip((pageNum - 1) * limitNum)
+//       .limit(limitNum);
+
+    
+//     if (authors.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No authors found",
+//          data: [],
+//         pagination: {
+//           total,
+//           page: pageNum,
+//           limit: limitNum,
+//           totalPages: Math.ceil(total / limitNum),
+//         },
+       
+//       });
+//     }
+
+    
+//     return res.status(200).json({
+//       success: true,
+//       message: "Authors fetched successfully",
+      
+//     //   sort: {
+//     //     sortBy,
+//     //     order,
+//     //   },
+//       data: authors,
+//       pagination: {
+//         total,
+//         page: pageNum,
+//         limit: limitNum,
+//         totalPages: Math.ceil(total / limitNum),
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching authors:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//       error: error.message,
+//     });
+//   }
+// };
 
 const getAllAuthors = async (req, res) => {
   try {
@@ -50,22 +121,37 @@ const getAllAuthors = async (req, res) => {
       page = 1,
       limit = 10,
       visible,
-      sortBy = "createdAt",
-      order = "desc", 
+      sortBy = "createdAt", 
+      order = "desc",       
+      search,               
     } = req.query;
 
+   
     const query = {};
-    if (visible !== undefined) query.visible = visible === "true";
 
-    
+    if (visible !== undefined) {
+      query.visible = visible === "true";
+    }
+
+   
+    if (search && search.trim() !== "") {
+      const regex = new RegExp(search, "i");
+      query.$or = [
+        { name: regex },
+        { bio: regex },
+        { genres: regex },
+      ];
+    }
+
+   
     const pageNum = Math.max(parseInt(page), 1);
     const limitNum = Math.max(parseInt(limit), 1);
 
-   
+    
     const sortDirection = order === "asc" ? 1 : -1;
     const sortOptions = { [sortBy]: sortDirection };
 
-    
+  
     const total = await Author.countDocuments(query);
 
     
@@ -78,37 +164,40 @@ const getAllAuthors = async (req, res) => {
     if (authors.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "No authors found",
-         data: [],
+        message: "No authors found matching your filters",
         pagination: {
           total,
           page: pageNum,
           limit: limitNum,
           totalPages: Math.ceil(total / limitNum),
         },
-       
+        data: [],
       });
     }
 
-    
+
     return res.status(200).json({
       success: true,
       message: "Authors fetched successfully",
-      
-    //   sort: {
-    //     sortBy,
-    //     order,
-    //   },
+     
       data: authors,
-      pagination: {
+       pagination: {
         total,
         page: pageNum,
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum),
       },
+    //   sort: {
+    //     sortBy,
+    //     order,
+    //   },
+    //   filters: {
+    //     visible,
+    //     search: search || null,
+    //   },
     });
   } catch (error) {
-    console.error("Error fetching authors:", error);
+   // console.error("Error fetching authors:", error);
     return res.status(500).json({
       success: false,
       message: "Server error",
@@ -133,7 +222,7 @@ const getAuthorById = async (req, res) => {
             data: author,
         });
     } catch (error) {
-        console.error("Error fetching author:", error);
+       // console.error("Error fetching author:", error);
         return res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
@@ -179,7 +268,7 @@ const updateAuthor = async (req, res) => {
             data: updatedAuthor,
         });
     } catch (error) {
-        console.error("Error updating author:", error);
+       // console.error("Error updating author:", error);
         return res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
@@ -201,7 +290,7 @@ const deleteAuthor = async (req, res) => {
             data: deletedAuthor,
         });
     } catch (error) {
-        console.error("Error deleting author:", error);
+      //  console.error("Error deleting author:", error);
         return res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
