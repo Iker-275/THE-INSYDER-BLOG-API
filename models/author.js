@@ -12,7 +12,7 @@ const authorSchema = new mongoose.Schema({
     },
     bio: {
         type: String,
-        required: [true, "Author bio must be provided"]
+        required: [false, "Author bio must be provided"]
 
     },
     visible: {

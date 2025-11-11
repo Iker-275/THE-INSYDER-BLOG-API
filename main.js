@@ -7,9 +7,9 @@ const connectDB = require("./db/connect");
 require("dotenv").config();
 
 const PORT = process.env.PORT || 3000;
-const blog_routes = require("./routes/blog_routes");
+const blog_routes = require("./routes/blogRoutes");
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 
 
 

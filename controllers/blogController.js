@@ -1,6 +1,7 @@
 const Article = require("../models/article");
 const mongoose = require("mongoose");
 const { ObjectId } = require("mongodb");
+const Genre = require("../models/Genre");
 
 
 
@@ -169,7 +170,7 @@ const searchArticles = async (req, res) => {
   }
 };
 
-const postArticle = async (req, res) => {
+const postArticle2 = async (req, res) => {
     try {
         // 1️⃣ Extract input from request body
         const { title, content, author, visible, imageUrl, genre } = req.body;
@@ -222,6 +223,68 @@ const postArticle = async (req, res) => {
             error: error.message,
         });
     }
+};
+
+
+
+const postArticle = async (req, res) => {
+  try {
+    const { title, content, author, visible, imageUrl, genre } = req.body;
+
+    
+    if (!title || !content || !author) {
+      return res.status(400).json({
+        success: false,
+        message: "Title, content, and author are required.",
+      });
+    }
+
+   
+    let genreName = genre?.trim();
+    if (genreName) {
+      const existingGenre = await Genre.findOne({
+        name: { $regex: new RegExp(`^${genreName}$`, "i") },
+      });
+
+      if (!existingGenre) {
+        // Create new genre automatically
+        const newGenre = new Genre({
+          name: genreName,
+          description: `Auto-generated genre for article: ${title}`,
+          visible: true,
+          publishedAt: new Date(),
+        });
+
+        await newGenre.save();
+       // console.log(`✅ New genre created: ${genreName}`);
+      }
+    }
+
+    // ✅ Create new article
+    const newArticle = new Article({
+      title,
+      content,
+      author,
+      visible: visible ?? false,
+      imageUrl: imageUrl || null,
+      genre: genreName || null,
+    });
+
+    const savedArticle = await newArticle.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Article created successfully.",
+      data: savedArticle,
+    });
+  } catch (error) {
+    console.error("Error creating article:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while creating article.",
+      error: error.message,
+    });
+  }
 };
 
 
