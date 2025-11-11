@@ -1,7 +1,7 @@
 const Article = require("../models/article");
 const mongoose = require("mongoose");
 const { ObjectId } = require("mongodb");
-const Genre = require("../models/Genre");
+const Genre = require("../models/genre");
 
 
 
